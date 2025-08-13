@@ -1,0 +1,104 @@
+<div class="dashboard-wrapper">
+  <!-- Header with logo and title -->
+  <header class="dashboard-header">
+    <img src="assets/TicketingAppLog.png" alt="App Logo" class="logo" />
+    <h1>Ticket Dashboard</h1>
+    <button (click)="logout()" class="btn logout-btn">Logout</button>
+  </header>
+
+  <!-- Admin Stats Cards -->
+  <section *ngIf="isAdmin" class="stats-section">
+    <div class="stat-card open">Open: {{ stats.open }}</div>
+    <div class="stat-card in-progress">In Progress: {{ stats.inProgress }}</div>
+    <div class="stat-card resolved">Resolved: {{ stats.resolved }}</div>
+    <div class="stat-card closed">Closed: {{ stats.closed }}</div>
+  </section>
+
+  <!-- Add Ticket Button for Users -->
+  <section *ngIf="!isAdmin" class="add-ticket-section">
+    <button (click)="showAddTicketModal = true" class="btn add-ticket-btn">+ Add New Ticket</button>
+  </section>
+
+  <!-- Create Ticket Modal -->
+  <div class="modal-backdrop" *ngIf="showAddTicketModal">
+    <div class="modal">
+      <h3>Create New Ticket</h3>
+      <form [formGroup]="ticketForm" (ngSubmit)="submitTicket()">
+        <label for="title">Title:</label>
+        <input id="title" formControlName="title" placeholder="Enter ticket title" />
+        <div *ngIf="ticketForm.get('title')?.invalid && ticketForm.get('title')?.touched" class="error">
+          Title is required
+        </div>
+
+        <label for="description">Description:</label>
+        <textarea id="description" formControlName="description" placeholder="Describe the issue"></textarea>
+        <div *ngIf="ticketForm.get('description')?.invalid && ticketForm.get('description')?.touched" class="error">
+          Description is required
+        </div>
+
+        <div class="modal-buttons">
+          <button type="submit" [disabled]="ticketForm.invalid" class="btn submit-btn">Submit</button>
+          <button type="button" (click)="showAddTicketModal = false" class="btn cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <section class="tickets-section">
+    <div class="table-container">
+      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z8 full-width-table">
+  
+        <!-- Time Ago Column -->
+        <ng-container matColumnDef="timeAgo">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
+          <td mat-cell *matCellDef="let ticket">{{ getTimeAgo(ticket.createdAt) }}</td>
+        </ng-container>
+  
+        <!-- Title Column -->
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Title</th>
+          <td mat-cell *matCellDef="let ticket">{{ ticket.title }}</td>
+        </ng-container>
+  
+        <!-- Description Column -->
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef>Description</th>
+          <td mat-cell *matCellDef="let ticket">{{ ticket.description }}</td>
+        </ng-container>
+  
+        <!-- Created By Column -->
+        <ng-container matColumnDef="createdBy">
+          <th mat-header-cell *matHeaderCellDef>Created By</th>
+          <td mat-cell *matCellDef="let ticket">{{ ticket.createdBy }}</td>
+        </ng-container>
+  
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let ticket">
+            <ng-container *ngIf="!isAdmin">{{ ticket.status }}</ng-container>
+            <ng-container *ngIf="isAdmin">
+              <select
+                [value]="ticket.status"
+                (change)="updateStatus(ticket.id, $event)"
+                class="status-select"
+              >
+                <option value="Open">Open</option>
+                <option value="InProgress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </ng-container>
+          </td>
+        </ng-container>
+  
+        <!-- Table Rows -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+  
+    <!-- Paginator outside scroll container -->
+    <mat-paginator [pageSizeOptions]="[5, 10, 25]" showFirstLastButtons></mat-paginator>
+  </section>
+</div>

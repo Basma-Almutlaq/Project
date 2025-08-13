@@ -1,0 +1,55 @@
+.role-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .logo {
+    width: 300px;
+    margin-bottom: 20px;
+  }
+  
+  h2 {
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+  }
+  
+  .subtitle {
+    font-size: 0.95rem;
+    color: #555;
+    margin-bottom: 30px;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 15px;
+  }
+  
+  .role-btn {
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .role-btn.admin {
+    background-color: #2563eb;
+    color: white;
+  }
+  
+  .role-btn.user {
+    background-color: #10b981;
+    color: white;
+  }
+  
+  .role-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+  }
+  

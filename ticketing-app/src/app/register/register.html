@@ -1,0 +1,29 @@
+<div class="register-container">
+    <div class="logo-container">
+      <img src="assets/TicketingAppLog.png" alt="App Logo" class="logo">
+    </div>
+  
+    <h2>Create Your Account</h2>
+  
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <label>Email</label>
+      <input type="email" formControlName="email" placeholder="Enter your email" />
+      <div class="error" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+        Please enter a valid email
+      </div>
+  
+      <label>Password</label>
+      <input type="password" formControlName="password" placeholder="Enter your password" />
+      <div class="error" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+        Password must be at least 6 characters
+      </div>
+  
+      <button type="submit" [disabled]="registerForm.invalid">Register</button>
+  
+      <p class="login-link">
+        Already have an account?
+        <a [routerLink]="['/login']" [queryParams]="{ role: role }">Login</a>
+      </p>
+    </form>
+  </div>
+  

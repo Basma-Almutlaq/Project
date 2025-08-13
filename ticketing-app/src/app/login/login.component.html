@@ -1,0 +1,30 @@
+<div class="login-container">
+    <div class="logo-container">
+      <img src="assets/TicketingAppLog.png" alt="App Logo" class="logo" />
+    </div>
+  
+    <h2>Login to Your Account</h2>
+  
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <label>Email</label>
+      <input formControlName="email" type="email" placeholder="Enter your email" />
+      <div class="error" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+        Invalid email
+      </div>
+  
+      <label>Password</label>
+      <input formControlName="password" type="password" placeholder="Enter your password" />
+      <div class="error" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+        Password is required
+      </div>
+  
+      <button type="submit" [disabled]="loginForm.invalid">Login</button>
+  
+      <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  
+      <p class="register-link">
+        Don’t have an account?
+        <a [routerLink]="['/register']" [queryParams]="{ role: loginForm.get('role')?.value }">Register</a>
+      </p>
+    </form>
+  </div>  
