@@ -9,24 +9,36 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
+import { Environment } from '../environment/Environment';
+import { forkJoin, Observable } from 'rxjs';
+
+interface Ticket {
+  id: number;
+  title: string;
+  description: string;
+  status: string;    
+  createdAt: string;  
+  createdBy: string;  
+}
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss'],
-  imports: [CommonModule,
+  imports: [
+    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
     MatButtonModule
-]
+  ]
 })
 export class Dashboard implements OnInit, AfterViewInit {
-  dataSource = new MatTableDataSource<any>();
-  displayedColumns: string[] = ['timeAgo', 'title', 'description', 'createdBy', 'status'];
+  dataSource = new MatTableDataSource<Ticket>();
+  displayedColumns: string[] = ['timeAgo', 'title', 'description', 'status']; 
 
   stats = { open: 0, inProgress: 0, resolved: 0, closed: 0 };
   isAdmin = false;
@@ -50,6 +62,10 @@ export class Dashboard implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.isAdmin = this.authService.getRole() === 'Admin';
+    this.displayedColumns = this.isAdmin
+      ? ['timeAgo', 'title', 'description', 'createdBy', 'status']
+      : ['timeAgo', 'title', 'description', 'status'];
+
     this.loadTickets();
   }
 
@@ -64,20 +80,49 @@ export class Dashboard implements OnInit, AfterViewInit {
   }
 
   loadTickets() {
-    const url = 'http://localhost:5123/api/Tickets';
+    const url = `${Environment.apiUrl}/Tickets`;
     const params = new HttpParams()
       .set('pageNumber', '1')
       .set('pageSize', '100');
 
     this.http.get<any>(url, { params }).subscribe({
       next: (data) => {
-        const ticketsData = data.items ?? data;
-        const filtered = this.isAdmin
-          ? ticketsData
-          : ticketsData.filter((ticket: any) => ticket.createdBy === this.authService.getUserId());
+        const ticketsData: Ticket[] = (data.items ?? data) as Ticket[];
 
-        this.dataSource.data = filtered;
-        this.calculateStats(filtered);
+        const currentUserId = this.authService.getUserId() ?? '';
+        const filtered: Ticket[] = this.isAdmin
+          ? ticketsData
+          : ticketsData.filter((ticket: Ticket) => ticket.createdBy === currentUserId);
+
+        filtered.sort(
+          (a: Ticket, b: Ticket) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        if (this.isAdmin && filtered.length > 0) {
+          const emailObservables: Observable<string>[] = filtered.map((t: Ticket) =>
+            this.authService.getUserEmailById(t.createdBy)
+          );
+
+          forkJoin(emailObservables).subscribe({
+            next: (emails: string[]) => {
+              const withEmails: Ticket[] = filtered.map((t: Ticket, i: number) => ({
+                ...t,
+                createdBy: emails[i] ?? t.createdBy
+              }));
+              this.dataSource.data = withEmails;
+              this.calculateStats(withEmails);
+            },
+            error: (err) => {
+              console.error('Failed to map user IDs to emails:', err);
+              this.dataSource.data = filtered;
+              this.calculateStats(filtered);
+            }
+          });
+        } else {
+          this.dataSource.data = filtered;
+          this.calculateStats(filtered);
+        }
       },
       error: (err) => {
         console.error('Error loading tickets:', err);
@@ -85,7 +130,7 @@ export class Dashboard implements OnInit, AfterViewInit {
     });
   }
 
-  calculateStats(tickets: any[]) {
+  calculateStats(tickets: Ticket[]) {
     this.stats.open = tickets.filter(t => t.status === 'Open').length;
     this.stats.inProgress = tickets.filter(t => t.status === 'InProgress').length;
     this.stats.resolved = tickets.filter(t => t.status === 'Resolved').length;
@@ -96,9 +141,9 @@ export class Dashboard implements OnInit, AfterViewInit {
     const selectElement = event.target as HTMLSelectElement;
     const statusString = selectElement.value as keyof typeof TicketStatus;
     const statusNumber = TicketStatus[statusString as keyof typeof TicketStatus] as unknown as number;
-
+  
     console.log(`Updating ticket ${ticketId} to status ${statusNumber}`);
-
+  
     this.authService.updateTicketStatus(ticketId, statusNumber).subscribe({
       next: () => {
         console.log('Status updated successfully');

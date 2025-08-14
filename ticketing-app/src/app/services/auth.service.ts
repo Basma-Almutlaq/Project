@@ -1,15 +1,16 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, map, Observable, throwError } from 'rxjs';
 import { LoginRequest, LoginResponse } from '../models/auth.model';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 import { TicketStatus } from '../dashboard/dashboard';
+import { Environment } from '../environment/Environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:5123/api/Auth'; 
+  private apiUrl = `${Environment.apiUrl}/Auth`; 
 
   constructor(private http: HttpClient) {}
 
@@ -32,12 +33,9 @@ export class AuthService {
 
   storeToken(token: string): void {
     localStorage.setItem('authToken', token);
-  
     try {
       const decoded: any = jwtDecode(token);
-  
       const roleClaimKey = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-  
       if (decoded && decoded[roleClaimKey]) {
         localStorage.setItem('userRole', decoded[roleClaimKey]);
       } else {
@@ -60,6 +58,23 @@ export class AuthService {
     return this.getRole() === 'Admin';
   }
 
+  getUserEmailById(userId: string): Observable<string> {
+    return this.http.get<{ email: string }>(`${Environment.apiUrl}/Auth/get-email/${userId}`)
+      .pipe(map(res => res.email));
+  }
+
+  getUserEmail(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const decoded: any = jwtDecode(token);
+      return decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/email'] ?? null;
+    } catch (e) {
+      console.error('Error decoding token', e);
+      return null;
+    }
+  }
+
   logout(): void {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
@@ -68,11 +83,9 @@ export class AuthService {
   getUserId(): string | null {
     const token = this.getToken();
     if (!token) return null;
-  
     try {
       const decoded: any = jwtDecode(token);
       const nameIdClaim = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier';
-  
       return decoded?.[nameIdClaim] || null;
     } catch (e) {
       console.error('Error decoding token', e);
@@ -82,7 +95,7 @@ export class AuthService {
  
   updateTicketStatus(ticketId: number, newStatus: TicketStatus): Observable<void> {
     return this.http.put<void>(
-      `http://localhost:5123/api/tickets/${ticketId}/status`,
+      `${Environment.apiUrl}/tickets/${ticketId}/status`,
       newStatus,
       {
         headers: new HttpHeaders({
@@ -95,7 +108,7 @@ export class AuthService {
   
   createTicket(data: { title: string; description: string; createdBy: string }): Observable<any> {
     return this.http.post<any>(
-      'http://localhost:5123/api/tickets',
+      `${Environment.apiUrl}/tickets`,
       JSON.stringify(data),
       {
         headers: new HttpHeaders({
@@ -105,5 +118,4 @@ export class AuthService {
       }
     );
   }
-    
 }
